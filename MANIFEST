@@ -1,0 +1,7 @@
+MANIFEST
+INSTALL
+README
+Makefile.PL
+t/00use.t
+lib/WWW/NanoRef.pm
+META.yml                                 Module meta-data (added by MakeMaker)

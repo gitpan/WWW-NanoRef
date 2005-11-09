@@ -1,0 +1,73 @@
+NAME
+     WWW::NanoRef - Shorten URLs via nanoref.com
+
+SYNOPSIS
+     use WWW::NanoRef;
+
+     my $ref = WWW::NanoRef->new({ url => $destination_url });
+     my $short_url = $ref->get_short_url;
+
+DESCRIPTION
+     This module uses the API published by nanoref.com to produce
+     shortened URLs.  So a destination URL like
+
+        http://maps.yahoo.com/dd_result?newaddr=865+W+El+C
+        amino+Real&taddr=2495+S+Delaware+St&csz=Sunnyvale%
+        2C+CA+94086&country=us&tcsz=San+Mateo%2C+CA+94403-
+        1902&tcountry=us
+
+     becomes a shorter URL like
+
+        http://nanoref.com/yahoo/_QhGlg
+
+METHODS
+  new(\%params)
+     Creates a new object.  The only key/value pair required is url,
+     which is the destination URL you want the shortened URL to
+     redirect to.
+
+   Parameters:
+    url
+         The destination URL you want the shortened URL to redirect to.
+
+    passwd
+         The password you want to associated with the nanoref.com URL for
+         viewing stats (see http://nanoref.com/ for details) when they
+         are implemented.
+
+    test
+         If set to a true value, a nanoref.com URL will be generated, but
+         will not be stored (and will not work).  It is used for testing
+         this module.
+
+  get_short_url()
+     Returns a shortened URL that will redirect to the destination
+     URL passed to new() when creating the object.  On error, undef
+     is returned.
+
+  get_error()
+     Returns the error message, if any, from the server.
+
+DEPENDENCIES
+     XML::Parser::Wrapper (which in turn depends on XML::Parser)
+     LWP
+
+AUTHOR
+    Don Owens <don@owensnet.com>
+
+LICENSE AND COPYRIGHT
+    Copyright (c) 2005 Don Owens <don@owensnet.com>. All rights reserved.
+
+    This is free software; you can redistribute it and/or modify it under
+    the same terms as Perl itself. See perlartistic.
+
+    This program is distributed in the hope that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+SEE ALSO
+     http://nanoref.com/
+
+VERSION
+     0.01
+
