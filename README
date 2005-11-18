@@ -5,7 +5,12 @@ SYNOPSIS
      use WWW::NanoRef;
 
      my $ref = WWW::NanoRef->new({ url => $destination_url });
+
      my $short_url = $ref->get_short_url;
+
+     # or
+
+     my $url = $ref->get_subdomain_url('test');
 
 DESCRIPTION
      This module uses the API published by nanoref.com to produce
@@ -19,6 +24,10 @@ DESCRIPTION
      becomes a shorter URL like
 
         http://nanoref.com/yahoo/_QhGlg
+
+     or a short URL like this that you choose yourself:
+
+        http://mymap.nanoref.com/
 
 METHODS
   new(\%params)
@@ -45,6 +54,16 @@ METHODS
      URL passed to new() when creating the object.  On error, undef
      is returned.
 
+  get_subdomain_url($subdomain)
+     Attempts to register a shortened URL with the given subdomain.  E.g.,
+
+         my $short_url = $nano_ref->get_subdomain_url('test');
+
+     If 'test' has not already been registered, then
+     http://test.nanoref.com/ will now redirect to the URL given to
+     new().  Otherwise, $short_url will be undef.  This corresponds
+     to the "Choose your own" tab on http://nanoref.com/.
+
   get_error()
      Returns the error message, if any, from the server.
 
@@ -69,5 +88,5 @@ SEE ALSO
      http://nanoref.com/
 
 VERSION
-     0.01
+     0.02
 

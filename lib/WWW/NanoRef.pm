@@ -12,7 +12,12 @@
  use WWW::NanoRef;
 
  my $ref = WWW::NanoRef->new({ url => $destination_url });
+
  my $short_url = $ref->get_short_url;
+
+ # or
+
+ my $url = $ref->get_subdomain_url('test');
 
 =head1 DESCRIPTION
 
@@ -28,6 +33,9 @@
 
     http://nanoref.com/yahoo/_QhGlg
 
+ or a short URL like this that you choose yourself:
+
+    http://mymap.nanoref.com/
 
 =cut
 
@@ -36,7 +44,7 @@ use warnings;
 
 package WWW::NanoRef;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use LWP;
 use XML::Parser::Wrapper;
@@ -103,10 +111,10 @@ sub new {
 =cut
 sub get_short_url {
     my $self = shift;
-    if ($self->{_error}) {
-        return;
-    }
-    elsif (exists($self->{_gen_url})) {
+#     if ($self->{_error}) {
+#         return;
+#     }
+    if (exists($self->{_gen_url})) {
         return $self->{_gen_url};
     }
     else {
@@ -116,6 +124,32 @@ sub get_short_url {
         else {
             return;
         }
+    }
+}
+
+=pod
+
+=head2 get_subdomain_url($subdomain)
+
+ Attempts to register a shortened URL with the given subdomain.  E.g.,
+
+     my $short_url = $nano_ref->get_subdomain_url('test');
+
+ If 'test' has not already been registered, then
+ http://test.nanoref.com/ will now redirect to the URL given to
+ new().  Otherwise, $short_url will be undef.  This corresponds
+ to the "Choose your own" tab on http://nanoref.com/.
+
+=cut
+sub get_subdomain_url {
+    my $self = shift;
+    my $domain = shift;
+    my $rv = $self->_fetch_api_domain($domain);
+    if ($rv) {
+        return $self->{_gen_url};
+    }
+    else {
+        return undef;
     }
 }
 
@@ -135,13 +169,13 @@ sub _fetch_api {
     my $self = shift;
     my $enc_url = $self->url_encode($self->{_dest_url});
     my $enc_passwd = $self->url_encode($self->{_passwd});
-    my $fetch_url = "http://nanoref.com/?api=1;url=$enc_url;passwd=$enc_passwd";
+    my $fetch_url = "http://nanoref.com/u/api/rest?url=$enc_url;passwd=$enc_passwd";
     if ($self->{_test}) {
         $fetch_url .= ";test=1";
     }
 
     my $request = HTTP::Request->new(GET => $fetch_url);
-    my $ua = LWP::UserAgent->new;
+    my $ua = LWP::UserAgent->new(agent => "WWW::NanoRef/$VERSION");
     my $response = $ua->request($request);
 
     if ($response->is_success) {
@@ -152,6 +186,53 @@ sub _fetch_api {
         if ($response_tag) {
             my $error_tag = $response_tag->kid('error');
             my $gen_url_tag = $response_tag->kid('gen_url');
+            if ($error_tag and $error_tag->text !~ /^\s*$/) {
+                $self->{_error} = $error_tag->text;
+                return;
+            }
+            else {
+                $self->{_gen_url} = $gen_url_tag->text if $gen_url_tag;
+                return 1;
+            }
+        }
+    }
+    else {
+        $self->{_error} = $response->message || 'problem fetching data';
+        return;
+    }
+}
+
+sub _fetch_api_domain {
+    my $self = shift;
+    my $domain = shift;
+    my $enc_url = $self->url_encode($self->{_dest_url});
+    my $enc_passwd = $self->url_encode($self->{_passwd});
+    my $enc_domain = $self->url_encode($domain);
+    my $fetch_url = "http://nanoref.com/u/api/rest_domain?url=$enc_url;subdomain=$enc_domain;";
+    $fetch_url .= "passwd=$enc_passwd";
+    if ($self->{_test}) {
+        $fetch_url .= ";test=1";
+    }
+
+    my $request = HTTP::Request->new(GET => $fetch_url);
+    my $ua = LWP::UserAgent->new(agent => "WWW::NanoRef/$VERSION");
+    my $response = $ua->request($request);
+
+    if ($response->is_success) {
+        my $content = $response->content;
+        my $parser = XML::Parser::Wrapper->new($content);
+        return unless $parser->name eq 'response';
+        my $response_tag = $parser;
+        if ($response_tag) {
+            my $error_tag = $response_tag->kid('error');
+            my $gen_url_tag = $response_tag->kid('gen_url');
+            my $status_tag = $response_tag->kid('status');
+            if ($status_tag) {
+                $self->{_status} = $status_tag->text;
+                if ($self->{_status} == 0) {
+                    return 0;
+                }
+            }
             if ($error_tag and $error_tag->text !~ /^\s*$/) {
                 $self->{_error} = $error_tag->text;
                 return;
@@ -204,7 +285,7 @@ PURPOSE.
 
 =head1 VERSION
 
- 0.01
+ 0.02
 
 =cut
 
